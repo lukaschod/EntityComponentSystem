@@ -69,6 +69,17 @@ world.GetOrCreateSystem<MySystem>(); // Create system
 world.Update(); // Execute single frame update
 ```
 
+Other features without example:
+- Jobs.
+- Serialization.
+- Profiling.
+- Command Buffer.
+
+## Limitations
+- Chunk resizing is not supported.
+- ForEach works with maximum 3 arguments. However can easily be extending in `NodeVision.Entities.hpp`.
+- Dynamic buffer is not supported.
+
 ## Example Single Threaded
 ```
 void MinimalDemo()
