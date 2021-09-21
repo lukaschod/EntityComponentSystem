@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="NodeVision.Profiling.h" />
+    <ClInclude Include="NodeVision.Collections.hpp" />
+    <ClInclude Include="NodeVision.Entities.hpp" />
+    <ClInclude Include="NodeVision.Assets.hpp" />
+    <ClInclude Include="NodeVision.Serialization.hpp" />
+    <ClInclude Include="NodeVision.Blob.hpp" />
+    <ClInclude Include="NodeVision.Build.hpp" />
+    <ClInclude Include="NodeVision.Jobs.hpp" />
+    <ClInclude Include="NodeVision.Core.hpp" />
+    <ClInclude Include="NodeVision.Entities.ForEach.hpp" />
+  </ItemGroup>
+</Project>

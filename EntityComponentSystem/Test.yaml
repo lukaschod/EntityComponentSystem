@@ -1,0 +1,44 @@
+Indexer:
+  Allocated: # 4
+  - ChunkIndex: 0
+    ArrayIndex: 0
+    Version: 0
+  - ChunkIndex: 0
+    ArrayIndex: 1
+    Version: 1
+  - ChunkIndex: 0
+    ArrayIndex: 1
+    Version: 0
+  - ChunkIndex: 1
+    ArrayIndex: 0
+    Version: 0
+  Free: # 1
+    - 1
+Chunks: # 2
+- Archetype:
+    ComponentTypes: # 1
+    - Guid: 1 1 1 1
+      Size: 4
+      TypeTree: # 1
+      - Name: Value
+        Type: Integer
+    Size: 12
+    Expermetal: 1
+  Count: 2
+  Capacity: 5461
+  A:
+  - Value: 5
+  - Value: 5
+- Archetype:
+    ComponentTypes: # 1
+    - Guid: 3 3 3 3
+      Size: 4
+      TypeTree: # 1
+      - Name: Value
+        Type: Integer
+    Size: 12
+    Expermetal: 1
+  Count: 1
+  Capacity: 5461
+  B:
+  - Value: 3
