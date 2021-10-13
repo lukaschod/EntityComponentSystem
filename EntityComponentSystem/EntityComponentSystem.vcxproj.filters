@@ -14,5 +14,6 @@
     <ClInclude Include="NodeVision.Jobs.hpp" />
     <ClInclude Include="NodeVision.Core.hpp" />
     <ClInclude Include="NodeVision.Entities.ForEach.hpp" />
+    <ClInclude Include="NodeVision.CommandBuffer.hpp" />
   </ItemGroup>
 </Project>

@@ -1548,38 +1548,31 @@ namespace NodeVision::Entities
         ArchetypeMask ExcludeMask;
     };
 
+    class World;
+
     class System
     {
     public:
-        System(EntityManager& manager, EntityCommandBuffer& commandBuffer, WorkerManager* workerManager) : 
+        System(World* world, EntityManager& manager, WorkerManager* workerManager) :
+            World(world),
             Manager(manager), 
-            CommandBuffer(commandBuffer),
             WorkerManager(workerManager)
         {}
 
     public:
         virtual void OnCreate() {}
         virtual void OnUpdate() = 0;
+        virtual void OnDestroy() {}
 
     protected:
         Query Entities() const { return Query(&Manager, WorkerManager); }
+        WorkerManager& GetWorkerManager() const { return *WorkerManager; }
 
     protected:
+        World* World;
         EntityManager& Manager;
-        EntityCommandBuffer& CommandBuffer;
         WorkerManager* WorkerManager;
     };
-
-    static EntityCommandBuffer* g_EntityCommandBuffer;
-    void SetEntityCommandBuffer(EntityCommandBuffer& entityCommandBuffer)
-    {
-        g_EntityCommandBuffer = &entityCommandBuffer;
-    }
-    EntityCommandBuffer& GetEntityCommandBuffer()
-    {
-        assert(g_EntityCommandBuffer != nullptr);
-        return *g_EntityCommandBuffer;
-    }
 
     class World
     {
@@ -1588,7 +1581,6 @@ namespace NodeVision::Entities
             Worker(nullptr)
         {
             Manager = new EntityManager();
-            CommandBuffer = new EntityCommandBuffer(*Manager);
             m_BlobManager = new BlobManager();
         }
 
@@ -1596,14 +1588,17 @@ namespace NodeVision::Entities
             Worker(workerManager)
         {
             Manager = new EntityManager();
-            CommandBuffer = new EntityCommandBuffer(*Manager);
             m_BlobManager = new BlobManager();
         }
 
         ~World()
         {
+            for (auto system : Systems)
+            {
+                system->OnDestroy();
+            }
+
             delete Manager;
-            delete CommandBuffer;
             delete m_BlobManager;
         }
 
@@ -1611,7 +1606,6 @@ namespace NodeVision::Entities
         {
             profile_function;
 
-            SetEntityCommandBuffer(*CommandBuffer); // todo thread base
             SetBlobManager(m_BlobManager);
 
             for (auto system : Systems)
@@ -1632,10 +1626,9 @@ namespace NodeVision::Entities
                     return *((S*)system);
             }
 
-            auto system = new S(*Manager, *CommandBuffer, Worker);
+            auto system = new S(this, *Manager, Worker);
             Systems.push_back(system);
 
-            SetEntityCommandBuffer(*CommandBuffer); // todo thread base
             SetBlobManager(m_BlobManager);
 
             profile_name(OnCreate);
@@ -1648,7 +1641,6 @@ namespace NodeVision::Entities
 
     private:
         EntityManager* Manager;
-        EntityCommandBuffer* CommandBuffer;
         BlobManager* m_BlobManager;
         WorkerManager* Worker;
 

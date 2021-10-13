@@ -149,6 +149,7 @@
     <ClInclude Include="NodeVision.Blob.hpp" />
     <ClInclude Include="NodeVision.Build.hpp" />
     <ClInclude Include="NodeVision.Collections.hpp" />
+    <ClInclude Include="NodeVision.CommandBuffer.hpp" />
     <ClInclude Include="NodeVision.Core.hpp" />
     <ClInclude Include="NodeVision.Entities.ForEach.hpp" />
     <ClInclude Include="NodeVision.Entities.hpp" />

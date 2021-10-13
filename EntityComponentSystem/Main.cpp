@@ -15,6 +15,7 @@
 #include "NodeVision.Serialization.hpp"
 #include "NodeVision.Jobs.hpp"
 #include "NodeVision.Build.hpp"
+#include "NodeVision.CommandBuffer.hpp"
 
 using namespace NodeVision::Serialization;
 
@@ -24,6 +25,7 @@ using namespace NodeVision::Profiling;
 using namespace NodeVision::Assets;
 using namespace NodeVision::Jobs;
 using namespace NodeVision::Build;
+using namespace NodeVision::CommandBuffer;
 
 void ArchetypeMaskTest()
 {
@@ -253,13 +255,13 @@ void WorldTest()
                         a.Value = a.Value + 5;
                     }
 
-                    CommandBuffer.AddComponentData(entity, C(20));
+                    //CommandBuffer.AddComponentData(entity, C(20));
                 }).Run();
 
-            CommandBuffer.Execute();
+            //CommandBuffer.Execute();
 
-            assert(Entities().With<A>().Count() == 1000);
-            assert(Entities().With<C>().Count() == 1000);
+            //assert(Entities().With<A>().Count() == 1000);
+            //assert(Entities().With<C>().Count() == 1000);
         }
     };
 
@@ -282,29 +284,19 @@ void CommandBufferTest()
         int Value;
     };
 
-    class ASystem : public System
-    {
-    public:
-        using System::System;
+    EntityManager manager;
+    auto archetype = manager.CreateArchetype({ typeof(A) });
 
-        virtual void OnUpdate()
-        {
-            auto archetype = Manager.CreateArchetype({ typeof(A) });
+    Entity entity = manager.CreateEntity(archetype);
+    manager.SetComponentData(entity, A(5));
 
-            Entity entity = Manager.CreateEntity(archetype);
-            Manager.SetComponentData(entity, A(5));
+    EntityCommandBuffer ecb(manager);
 
-            CommandBuffer.AddComponentData(entity, B(20));
+    ecb.AddComponentData(entity, B(20));
 
-            CommandBuffer.Execute();
+    ecb.Execute();
 
-            assert(Manager.GetComponentData<B>(entity).Value == 20);
-        }
-    };
-
-    World world;;
-    world.GetOrCreateSystem<ASystem>();
-    world.Update();
+    assert(manager.GetComponentData<B>(entity).Value == 20);
 }
 
 struct A : IPersistent<1>
@@ -466,6 +458,71 @@ void JobsTest()
     assert(result == (5 + 2) * (6 + 3));
 }
 
+void JobifiedEntityCommandBufferTest()
+{
+    struct MyComponent
+    {
+        MyComponent(float value) { Value = value; }
+        float Value;
+    };
+
+    struct MyComponent2
+    {
+        MyComponent2(float value) { Value = value; }
+        float Value;
+    };
+
+    class MySystem : public System
+    {
+    public:
+        using System::System;
+
+        virtual void OnCreate()
+        {
+            EcbSystem = &World->GetOrCreateSystem<EndSimulationCommandBufferSystem>();
+            EntityArchetype archetype = Manager.CreateArchetype({ typeof(MyComponent) });
+            Entity entity = Manager.CreateEntity(archetype);
+        }
+
+        virtual void OnUpdate()
+        {
+            auto ecb = EcbSystem->GetBuffer();
+            auto dependency = Entities().ForEach(
+                [=](Entity entity, cwrite(MyComponent) myComponent)
+                {
+                    ecb->AddComponentData(entity, MyComponent2(4));
+                    //printf("Entity:(%d, %d) MyComponent:%f\n", entity.Index, entity.Version, myComponent.Value);
+                }).Schedule();
+            EcbSystem->AddProducer(dependency);
+        }
+
+        EndSimulationCommandBufferSystem* EcbSystem;
+    };
+
+    class MySystem2 : public System
+    {
+    public:
+        using System::System;
+
+        virtual void OnUpdate()
+        {
+            Entities().ForEach(
+                [](Entity entity, cread(MyComponent2) myComponent)
+                {
+                    assert(myComponent.Value == 4);
+                }).Schedule();
+        }
+    };
+
+    WorkerManager workerManager; // Create multi threads
+    workerManager.Start({ WorkerContext() });
+    World world(&workerManager); // Create world
+    world.GetOrCreateSystem<MySystem>(); // Create system
+    world.GetOrCreateSystem<MySystem2>(); // Create system
+    world.Update(); // Execute single frame update
+    workerManager.Stop();
+}
+
 void Demo()
 {
     struct Position
@@ -585,6 +642,57 @@ void Demo()
 #endif
 }
 
+void MinimalDemo()
+{
+    struct MyComponent
+    {
+        MyComponent(float value) { Value = value; }
+        float Value;
+    };
+
+    struct MyComponent2
+    {
+        MyComponent2(float value) { Value = value; }
+        float Value;
+    };
+
+    class MySystem : public System
+    {
+    public:
+        using System::System;
+
+        virtual void OnCreate()
+        {
+            EntityArchetype archetype = Manager.CreateArchetype({ typeof(MyComponent) });
+
+            Entity entity = Manager.CreateEntity(archetype);
+            Manager.SetComponentData(entity, MyComponent(1));
+
+            Manager.AddComponentData(entity, MyComponent2(2));
+
+            printf("%f \n", Manager.GetComponentData<MyComponent2>(entity).Value);
+
+            Manager.DestroyEntity(entity);
+        }
+
+        virtual void OnUpdate()
+        {
+            Entities().ForEach(
+                [](Entity entity, cread(MyComponent) myComponent)
+                {
+                    printf("Entity:(%d, %d) MyComponent:%f\n", entity.Index, entity.Version, myComponent.Value);
+                }).Schedule();
+        }
+    };
+
+    WorkerManager workerManager; // Create multi threads
+    workerManager.Start({ WorkerContext() });
+    World world(&workerManager); // Create world
+    world.GetOrCreateSystem<MySystem>(); // Create system
+    world.Update(); // Execute single frame update
+    workerManager.Stop();
+}
+
 #define run_test(Name) \
     printf("Running Test " #Name ":\n"); \
     ##Name (); \
@@ -602,9 +710,11 @@ int main()
     run_test(BlobReferenceTest);
     run_test(JobsTest);
     run_test(EntityManagerSerializeTest);
+    run_test(JobifiedEntityCommandBufferTest);
 
     // Run small demo
     Demo();
+    MinimalDemo();
 
     return 0;
 }
